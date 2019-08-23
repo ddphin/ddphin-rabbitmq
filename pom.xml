@@ -131,6 +131,7 @@
                         <directory>src/main/java</directory>
                         <includes>
                             <include>**/*.xml</include>
+                            <include>lua/*.lua</include>
                         </includes>
                         <!-- 是否替换资源中的属性-->
                         <filtering>false</filtering>
@@ -218,6 +219,7 @@
                         <directory>src/main/java</directory>
                         <includes>
                             <include>**/*.xml</include>
+                            <include>lua/*.lua</include>
                         </includes>
                         <!-- 是否替换资源中的属性-->
                         <filtering>false</filtering>
