@@ -2,13 +2,9 @@ package com.ddphin.rabbitmq.scheduler;
 
 import com.ddphin.rabbitmq.sender.RabbitmqCommonTxMessageSender;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.scheduling.support.CronTrigger;
-import org.springframework.stereotype.Component;
 
 import java.util.Date;
 import java.util.concurrent.Executor;
@@ -73,7 +69,7 @@ public class RabbitmqRetrySchedulerConfigurer implements SchedulingConfigurer {
     }
 
     private Executor newExecutors() {
-        return Executors.newScheduledThreadPool(10, r -> new Thread(r, String.format("MQ-RETRY-%s", integer.incrementAndGet())));
+        return Executors.newScheduledThreadPool(10, r -> new Thread(r, String.format("DDphin-Rabbitmq-%s", integer.incrementAndGet())));
     }
 
     private void retry() {

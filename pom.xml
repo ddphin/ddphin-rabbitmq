@@ -28,7 +28,7 @@
 
     <groupId>com.github.ddphin</groupId>
     <artifactId>ddphin-rabbitmq</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <packaging>jar</packaging>
 
     <name>ddphin-rabbitmq</name>
@@ -131,6 +131,13 @@
                         <directory>src/main/java</directory>
                         <includes>
                             <include>**/*.xml</include>
+                        </includes>
+                        <!-- 是否替换资源中的属性-->
+                        <filtering>false</filtering>
+                    </resource>
+                    <resource>
+                        <directory>src/main/resources</directory>
+                        <includes>
                             <include>lua/*.lua</include>
                         </includes>
                         <!-- 是否替换资源中的属性-->
@@ -219,6 +226,13 @@
                         <directory>src/main/java</directory>
                         <includes>
                             <include>**/*.xml</include>
+                        </includes>
+                        <!-- 是否替换资源中的属性-->
+                        <filtering>false</filtering>
+                    </resource>
+                    <resource>
+                        <directory>src/main/resources</directory>
+                        <includes>
                             <include>lua/*.lua</include>
                         </includes>
                         <!-- 是否替换资源中的属性-->
