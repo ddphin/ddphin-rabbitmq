@@ -2,6 +2,7 @@ package com.ddphin.rabbitmq.sender.impl;
 
 import com.alibaba.fastjson.JSONObject;
 import com.ddphin.id.endpoint.IDWorkerAware;
+import com.ddphin.rabbitmq.configuration.DdphinRabbitmqProperties;
 import com.ddphin.rabbitmq.entity.CorrelationDataMQ;
 import com.ddphin.rabbitmq.entity.CorrelationDataRedis;
 import com.ddphin.rabbitmq.sender.RabbitmqCommonTxMessageSender;
@@ -60,9 +61,21 @@ public class RabbitmqCommonTxMessageSenderImpl
     private ThreadLocal<CorrelationDataMQ> singleMessage = ThreadLocal.withInitial(() -> null);
     private ThreadLocal<Boolean> register = ThreadLocal.withInitial(() -> false);
 
-    public RabbitmqCommonTxMessageSenderImpl(RabbitTemplate rabbitTemplate, RedisHelper redisHelper) {
+    private Long idPrepareTimeout = 60000L;
+    private Long idDoTimeout = 60000L;
+
+    public RabbitmqCommonTxMessageSenderImpl(
+            RabbitTemplate rabbitTemplate,
+            RedisHelper redisHelper,
+            DdphinRabbitmqProperties ddphinRabbitmqProperties) {
         this.rabbitTemplate = rabbitTemplate;
         this.redisHelper = redisHelper;
+        if (null != ddphinRabbitmqProperties.getIdPrepareTimeout()) {
+            this.idPrepareTimeout = ddphinRabbitmqProperties.getIdPrepareTimeout();
+        }
+        if (null != ddphinRabbitmqProperties.getIdDoTimeout()) {
+            this.idDoTimeout = ddphinRabbitmqProperties.getIdDoTimeout();
+        }
 
         ResourceLoader resourceLoader = new DefaultResourceLoader();
 
@@ -188,7 +201,7 @@ public class RabbitmqCommonTxMessageSenderImpl
                 Arrays.asList(
                         message_cache_name_id_do,
                         message_cache_name_id_redo),
-                System.currentTimeMillis() - 60 * 1000);//一分钟之前
+                System.currentTimeMillis() - this.idDoTimeout);//一分钟之前
     }
 
 
@@ -199,7 +212,7 @@ public class RabbitmqCommonTxMessageSenderImpl
                         message_cache_name_id_prepare,
                         message_cache_name_data_normal,
                         message_cache_name_data_death),
-                System.currentTimeMillis() - 60 * 1000);//一分钟之前
+                System.currentTimeMillis() - this.idPrepareTimeout);//一分钟之前
     }
 
     @Override

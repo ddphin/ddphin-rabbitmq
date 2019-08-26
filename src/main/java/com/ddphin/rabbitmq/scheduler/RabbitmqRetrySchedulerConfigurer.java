@@ -1,5 +1,6 @@
 package com.ddphin.rabbitmq.scheduler;
 
+import com.ddphin.rabbitmq.configuration.DdphinRabbitmqProperties;
 import com.ddphin.rabbitmq.sender.RabbitmqCommonTxMessageSender;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
@@ -24,9 +25,36 @@ public class RabbitmqRetrySchedulerConfigurer implements SchedulingConfigurer {
     private String retryCron = "0 0/1 * * * ?";
     private String redoCron = "30 0/1 * * * ?";
     private String clearCron = "0 0/1 * * * ?";
+    private Integer poolSize = 10;
+    private Boolean enableRetry = true;
+    private Boolean enableRedo = true;
+    private Boolean enableClear = true;
 
-    public RabbitmqRetrySchedulerConfigurer(RabbitmqCommonTxMessageSender rabbitmqCommonTxMessageSender) {
+    public RabbitmqRetrySchedulerConfigurer(
+            RabbitmqCommonTxMessageSender rabbitmqCommonTxMessageSender,
+            DdphinRabbitmqProperties ddphinRabbitmqProperties) {
         this.rabbitmqCommonTxMessageSender = rabbitmqCommonTxMessageSender;
+        if (null != ddphinRabbitmqProperties.getRetryCron()) {
+            this.retryCron = ddphinRabbitmqProperties.getRetryCron();
+        }
+        if (null != ddphinRabbitmqProperties.getRedoCron()) {
+            this.redoCron = ddphinRabbitmqProperties.getRedoCron();
+        }
+        if (null != ddphinRabbitmqProperties.getClearCron()) {
+            this.clearCron = ddphinRabbitmqProperties.getClearCron();
+        }
+        if (null != ddphinRabbitmqProperties.getPoolSize()) {
+            this.poolSize = ddphinRabbitmqProperties.getPoolSize();
+        }
+        if (null != ddphinRabbitmqProperties.getEnableRetry()) {
+            this.enableRetry = ddphinRabbitmqProperties.getEnableRetry();
+        }
+        if (null != ddphinRabbitmqProperties.getEnableRedo()) {
+            this.enableRedo = ddphinRabbitmqProperties.getEnableRedo();
+        }
+        if (null != ddphinRabbitmqProperties.getEnableClear()) {
+            this.enableClear = ddphinRabbitmqProperties.getEnableClear();
+        }
     }
 
     public String getRetryCron() {
@@ -50,26 +78,34 @@ public class RabbitmqRetrySchedulerConfigurer implements SchedulingConfigurer {
 
     @Override
     public void configureTasks(ScheduledTaskRegistrar scheduledTaskRegistrar) {
-        scheduledTaskRegistrar.setScheduler(this.newExecutors());
+        if (enableRetry || enableRedo || enableClear) {
+            scheduledTaskRegistrar.setScheduler(this.newExecutors());
+        }
 
-        scheduledTaskRegistrar.addTriggerTask(this::retry, triggerContext -> {
-            CronTrigger trigger = new CronTrigger(this.getRetryCron());
-            return trigger.nextExecutionTime(triggerContext);
-        });
+        if (enableRetry) {
+            scheduledTaskRegistrar.addTriggerTask(this::retry, triggerContext -> {
+                CronTrigger trigger = new CronTrigger(this.getRetryCron());
+                return trigger.nextExecutionTime(triggerContext);
+            });
+        }
 
-        scheduledTaskRegistrar.addTriggerTask(this::redo, triggerContext -> {
-            CronTrigger trigger = new CronTrigger(this.getRedoCron());
-            return trigger.nextExecutionTime(triggerContext);
-        });
+        if (enableRedo) {
+            scheduledTaskRegistrar.addTriggerTask(this::redo, triggerContext -> {
+                CronTrigger trigger = new CronTrigger(this.getRedoCron());
+                return trigger.nextExecutionTime(triggerContext);
+            });
+        }
 
-        scheduledTaskRegistrar.addTriggerTask(this::clear, triggerContext -> {
-            CronTrigger trigger = new CronTrigger(this.getClearCron());
-            return trigger.nextExecutionTime(triggerContext);
-        });
+        if (enableClear) {
+            scheduledTaskRegistrar.addTriggerTask(this::clear, triggerContext -> {
+                CronTrigger trigger = new CronTrigger(this.getClearCron());
+                return trigger.nextExecutionTime(triggerContext);
+            });
+        }
     }
 
     private Executor newExecutors() {
-        return Executors.newScheduledThreadPool(10, r -> new Thread(r, String.format("DDphin-Rabbitmq-%s", integer.incrementAndGet())));
+        return Executors.newScheduledThreadPool(this.poolSize, r -> new Thread(r, String.format("DDphin-Rabbitmq-%s", integer.incrementAndGet())));
     }
 
     private void retry() {
