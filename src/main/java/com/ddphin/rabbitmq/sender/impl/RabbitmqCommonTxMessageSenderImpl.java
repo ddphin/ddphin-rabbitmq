@@ -312,31 +312,34 @@ public class RabbitmqCommonTxMessageSenderImpl
 
     @Override
     public void returnedMessage(Message message, int replyCode, String replyText, String exchange, String routingKey) {
-        String id = String.valueOf(message.getMessageProperties().getHeaders().get("spring_returned_message_correlation"));
-        String clazz = String.valueOf(message.getMessageProperties().getHeaders().get("__TypeId__"));
-        String data = new String(message.getBody());
-        Object obj = this.getObject(data, clazz);
-        Integer millis = message.getMessageProperties().getDelay();
-        Assert.notNull(obj, "message 消息体不能为NULL");
+        Integer millis = message.getMessageProperties().getReceivedDelay();
+
+        if (null != millis) {
+            String id = String.valueOf(message.getMessageProperties().getHeaders().get("spring_returned_message_correlation"));
+            String clazz = String.valueOf(message.getMessageProperties().getHeaders().get("__TypeId__"));
+            String data = new String(message.getBody());
+            Object obj = this.getObject(data, clazz);
+            Assert.notNull(obj, "message 消息体不能为NULL");
 
 
-        log.error("消息发送到queue失败:保存:\n" +
-                "            id: {}\n" +
-                "         clazz: {}\n"+
-                "          data: {}\n"+
-                "      exchange: {}\n"+
-                "    routingKey: {}\n"+
-                "     replyText: {}\n",
-                id,
-                clazz,
-                data,
-                exchange,
-                routingKey,
-                replyText);
+            log.error("消息发送到queue失败:保存:\n" +
+                            "            id: {}\n" +
+                            "         clazz: {}\n"+
+                            "          data: {}\n"+
+                            "      exchange: {}\n"+
+                            "    routingKey: {}\n"+
+                            "     replyText: {}\n",
+                    id,
+                    clazz,
+                    data,
+                    exchange,
+                    routingKey,
+                    replyText);
 
-        CorrelationDataMQ correlationData = new CorrelationDataMQ(exchange, routingKey, millis, obj, id);
+            CorrelationDataMQ correlationData = new CorrelationDataMQ(exchange, routingKey, millis, obj, id);
+            this.script_mq_save_death(new CorrelationDataRedis(correlationData));
+        }
 
-        this.script_mq_save_death(new CorrelationDataRedis(correlationData));
     }
 
     private Object getObject(String data, String clazz) {
