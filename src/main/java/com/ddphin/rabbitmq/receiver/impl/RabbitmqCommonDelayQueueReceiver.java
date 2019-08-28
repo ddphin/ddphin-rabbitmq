@@ -16,12 +16,12 @@ import java.io.IOException;
  */
 @Slf4j
 public class RabbitmqCommonDelayQueueReceiver extends RabbitmqCommonAbstractQueueReceiver implements RabbitmqCommonQueueReceiver {
-    public final static String RECEIVER_COMMON_DELAY_QUEUE = "receiver.common.delay.queue";
-    public final static String RECEIVER_COMMON_DELAY_EXCHANGE = "receiver.common.delay.exchange";
-    public final static String RECEIVER_COMMON_DELAY_ROUTING_KEY = "receiver.common.delay.routing.key";
+    public final static String DDPHIN_COMMON_DELAY_QUEUE = "ddphin.common.delay.queue";
+    public final static String DDPHIN_COMMON_DELAY_EXCHANGE = "ddphin.common.delay.exchange";
+    public final static String DDPHIN_COMMON_DELAY_ROUTING_KEY = "ddphin.common.delay.routing.key";
 
     @Override
-    @RabbitListener(queues = {RECEIVER_COMMON_DELAY_QUEUE})
+    @RabbitListener(queues = {DDPHIN_COMMON_DELAY_QUEUE})
     public void receiver(Message message, org.springframework.amqp.core.Message amqpMessage, Channel channel) throws IOException {
         super.receiver(message, amqpMessage, channel);
     }

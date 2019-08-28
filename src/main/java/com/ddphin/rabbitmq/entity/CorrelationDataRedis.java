@@ -18,7 +18,7 @@ public class CorrelationDataRedis implements Serializable {
     private String clazz;
     private String exchange;
     private String routingKey;
-    private Long millis;
+    private Integer millis;
     private Long created;
 
     public CorrelationDataRedis() {}

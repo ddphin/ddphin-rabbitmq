@@ -19,11 +19,11 @@ public class CorrelationDataMQ extends CorrelationData {
     private Integer retry;
     private String exchange;
     private String routingKey;
-    private Long millis;
+    private Integer millis;
 
     public CorrelationDataMQ() {}
 
-    public CorrelationDataMQ(String exchange, String routingKey, Long millis, final Object message, String id) {
+    public CorrelationDataMQ(String exchange, String routingKey, Integer millis, final Object message, String id) {
         Assert.notNull(id, "id 消息体不能为NULL");
         Assert.notNull(message, "message 消息体不能为NULL");
         Assert.notNull(exchange, "exchange 不能为NULL");

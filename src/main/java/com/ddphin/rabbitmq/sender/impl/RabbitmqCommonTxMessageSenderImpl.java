@@ -9,6 +9,7 @@ import com.ddphin.rabbitmq.sender.RabbitmqCommonTxMessageSender;
 import com.ddphin.redis.helper.RedisHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.InitializingBean;
@@ -221,7 +222,7 @@ public class RabbitmqCommonTxMessageSenderImpl
     }
 
     @Override
-    public void send(String exchange, String routingKey, Long millis, final Object message) {
+    public void send(String exchange, String routingKey, Integer millis, final Object message) {
         Assert.isTrue(TransactionSynchronizationManager.isActualTransactionActive(), "@Transactional is required");
         Assert.isNull(singleMessage.get(), "Only support single message per thread");
 
@@ -256,7 +257,10 @@ public class RabbitmqCommonTxMessageSenderImpl
                     correlationData.getRoutingKey(),
                     message,
                     msg -> {
-                        msg.getMessageProperties().setExpiration(String.valueOf(correlationData.getMillis()));
+                        //设置消息持久化
+                        msg.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);
+                        //message.getMessageProperties().setHeader("x-delay", "6000");
+                        msg.getMessageProperties().setDelay(correlationData.getMillis());
                         return msg;
                     },
                     correlationData);
@@ -312,7 +316,7 @@ public class RabbitmqCommonTxMessageSenderImpl
         String clazz = String.valueOf(message.getMessageProperties().getHeaders().get("__TypeId__"));
         String data = new String(message.getBody());
         Object obj = this.getObject(data, clazz);
-        Long millis = Long.valueOf(message.getMessageProperties().getExpiration());
+        Integer millis = message.getMessageProperties().getDelay();
         Assert.notNull(obj, "message 消息体不能为NULL");
 
 
