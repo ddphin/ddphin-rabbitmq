@@ -1,6 +1,7 @@
 package com.ddphin.rabbitmq.receiver.impl;
 
 import com.alibaba.fastjson.JSONObject;
+import com.ddphin.rabbitmq.entity.Result;
 import com.ddphin.rabbitmq.receiver.RabbitmqCommonQueueReceiver;
 import com.ddphin.rabbitmq.receiver.RabbitmqCommonQueueReceiverHandler;
 import com.ddphin.rabbitmq.receiver.RabbitmqCommonQueueReceiverHandlerHolder;
@@ -19,7 +20,7 @@ import java.io.IOException;
 @Slf4j
 public abstract class RabbitmqCommonAbstractQueueReceiver implements RabbitmqCommonQueueReceiver {
     @Override
-    public void receiver(Message message, org.springframework.amqp.core.Message amqpMessage, Channel channel) throws IOException {
+    public Object receiver(Message message, org.springframework.amqp.core.Message amqpMessage, Channel channel) throws IOException {
 
         Object data = message.getPayload();
         RabbitmqCommonQueueReceiverHandler handler = RabbitmqCommonQueueReceiverHandlerHolder.get(this.getClass(), data);
@@ -33,32 +34,41 @@ public abstract class RabbitmqCommonAbstractQueueReceiver implements RabbitmqCom
                     JSONObject.toJSONString(message),
                     JSONObject.toJSONString(channel),
                     handler.getClass().getName());
-            Boolean requeue = handler.process(data);
-            if (null == requeue) {
-                channel.basicAck(amqpMessage.getMessageProperties().getDeliveryTag(), false);
-                log.info("收到并确认消息:\n" +
-                          "       data: {}\n" +
-                          "    message: {}\n" +
-                          "    channel: {}\n" +
-                          "    receiver: {}",
-                        JSONObject.toJSONString(data),
-                        JSONObject.toJSONString(message),
-                        JSONObject.toJSONString(channel),
-                        handler.getClass().getName());
+            try {
+                Result result = handler.process(data);
+                if (result.getSuccess()) {
+                    channel.basicAck(amqpMessage.getMessageProperties().getDeliveryTag(), result.getRequeue());
+                    log.info("收到并确认消息:\n" +
+                                    "       data: {}\n" +
+                                    "    message: {}\n" +
+                                    "    channel: {}\n" +
+                                    "    receiver: {}\n" +
+                                    "    requeue: {}",
+                            JSONObject.toJSONString(data),
+                            JSONObject.toJSONString(message),
+                            JSONObject.toJSONString(channel),
+                            handler.getClass().getName(),
+                            result.getRequeue());
+                }
+                else {
+                    channel.basicNack(amqpMessage.getMessageProperties().getDeliveryTag(), false, result.getRequeue());
+                    log.warn("收到并丢弃消息:\n" +
+                                    "       data: {}\n" +
+                                    "    message: {}\n" +
+                                    "    channel: {}\n" +
+                                    "    receiver: {}\n" +
+                                    "    requeue: {}",
+                            JSONObject.toJSONString(data),
+                            JSONObject.toJSONString(message),
+                            JSONObject.toJSONString(channel),
+                            handler.getClass().getName(),
+                            result.getRequeue());
+                }
+                return result.getData();
             }
-            else {
-                channel.basicNack(amqpMessage.getMessageProperties().getDeliveryTag(), false, requeue);
-                log.warn("收到并丢弃消息:\n" +
-                          "       data: {}\n" +
-                          "    message: {}\n" +
-                          "    channel: {}\n" +
-                          "    receiver: {}\n" +
-                          "    requeue: {}",
-                        JSONObject.toJSONString(data),
-                        JSONObject.toJSONString(message),
-                        JSONObject.toJSONString(channel),
-                        handler.getClass().getName(),
-                        requeue);
+            catch (Exception e) {
+                log.error("消息处理异常,重新入列", e);
+                channel.basicNack(amqpMessage.getMessageProperties().getDeliveryTag(), false, true);
             }
         }
         else {
@@ -71,5 +81,6 @@ public abstract class RabbitmqCommonAbstractQueueReceiver implements RabbitmqCom
                     JSONObject.toJSONString(message),
                     JSONObject.toJSONString(channel));
         }
+        return null;
     }
 }

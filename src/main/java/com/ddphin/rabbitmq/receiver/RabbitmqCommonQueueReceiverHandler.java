@@ -1,5 +1,7 @@
 package com.ddphin.rabbitmq.receiver;
 
+import com.ddphin.rabbitmq.entity.Result;
+
 /**
  * RabbitmqCommonQueueReceiverHandler
  *
@@ -7,5 +9,5 @@ package com.ddphin.rabbitmq.receiver;
  * @Author ddphin
  */
 public interface RabbitmqCommonQueueReceiverHandler<T> {
-    Boolean process(T data);
+    Result process(T data);
 }

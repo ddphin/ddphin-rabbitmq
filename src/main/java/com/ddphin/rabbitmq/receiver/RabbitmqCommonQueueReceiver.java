@@ -13,5 +13,5 @@ import java.io.IOException;
  */
 
 public interface RabbitmqCommonQueueReceiver {
-    void receiver(Message message, org.springframework.amqp.core.Message amqpMessage, Channel channel) throws IOException;
+    Object receiver(Message message, org.springframework.amqp.core.Message amqpMessage, Channel channel) throws IOException;
 }
