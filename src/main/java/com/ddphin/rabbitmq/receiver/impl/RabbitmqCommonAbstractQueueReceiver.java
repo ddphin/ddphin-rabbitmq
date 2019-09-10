@@ -19,17 +19,27 @@ import java.io.IOException;
  */
 @Slf4j
 public abstract class RabbitmqCommonAbstractQueueReceiver implements RabbitmqCommonQueueReceiver {
-    @Override
-    public Object receiver(Message message, org.springframework.amqp.core.Message amqpMessage, Channel channel) throws IOException {
 
+
+    @Override
+    public void receiver(Message message, org.springframework.amqp.core.Message amqpMessage, Channel channel) throws IOException {
+        this.process(message, amqpMessage, channel);
+    }
+
+    @Override
+    public Object receiverAndReply(Message message, org.springframework.amqp.core.Message amqpMessage, Channel channel) throws IOException {
+        return this.process(message, amqpMessage, channel);
+    }
+
+    private Object process(Message message, org.springframework.amqp.core.Message amqpMessage, Channel channel) throws IOException {
         Object data = message.getPayload();
         RabbitmqCommonQueueReceiverHandler handler = RabbitmqCommonQueueReceiverHandlerHolder.get(this.getClass(), data);
         if (null != handler) {
             log.info("收到延息且找到消息处理器:\n" +
-                      "       data: {}\n" +
-                      "    message: {}\n" +
-                      "    channel: {}\n" +
-                      "    receiver: {}",
+                            "       data: {}\n" +
+                            "    message: {}\n" +
+                            "    channel: {}\n" +
+                            "    receiver: {}",
                     JSONObject.toJSONString(data),
                     JSONObject.toJSONString(message),
                     JSONObject.toJSONString(channel),
@@ -74,9 +84,9 @@ public abstract class RabbitmqCommonAbstractQueueReceiver implements RabbitmqCom
         else {
             channel.basicNack(amqpMessage.getMessageProperties().getDeliveryTag(), false, false);
             log.warn("收到消息但未找到消息处理器丢弃消息:\n" +
-                      "       data: {}\n" +
-                      "    message: {}\n" +
-                      "    channel: {}\n",
+                            "       data: {}\n" +
+                            "    message: {}\n" +
+                            "    channel: {}\n",
                     JSONObject.toJSONString(data),
                     JSONObject.toJSONString(message),
                     JSONObject.toJSONString(channel));

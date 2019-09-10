@@ -22,7 +22,7 @@ public class RabbitmqCommonDelayQueueReceiver extends RabbitmqCommonAbstractQueu
 
     @Override
     @RabbitListener(queues = {DDPHIN_COMMON_DELAY_QUEUE})
-    public Object receiver(Message message, org.springframework.amqp.core.Message amqpMessage, Channel channel) throws IOException {
-        return super.receiver(message, amqpMessage, channel);
+    public void receiver(Message message, org.springframework.amqp.core.Message amqpMessage, Channel channel) throws IOException {
+        super.receiver(message, amqpMessage, channel);
     }
 }
