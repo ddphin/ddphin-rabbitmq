@@ -21,9 +21,12 @@ import org.springframework.scripting.support.ResourceScriptSource;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * TestSender
@@ -59,7 +62,7 @@ public class RabbitmqCommonTxMessageSenderImpl
 
     private RabbitTemplate rabbitTemplate;
     private RedisHelper redisHelper;
-    private ThreadLocal<CorrelationDataMQ> singleMessage = ThreadLocal.withInitial(() -> null);
+    private ThreadLocal<List<CorrelationDataMQ>> messageList = ThreadLocal.withInitial(() -> null);
     private ThreadLocal<Boolean> register = ThreadLocal.withInitial(() -> false);
 
     private Long idPrepareTimeout = 60000L;
@@ -224,15 +227,15 @@ public class RabbitmqCommonTxMessageSenderImpl
     @Override
     public void send(String exchange, String routingKey, Integer millis, final Object message) {
         Assert.isTrue(TransactionSynchronizationManager.isActualTransactionActive(), "@Transactional is required");
-        Assert.isNull(singleMessage.get(), "Only support single message per thread");
 
         CorrelationDataMQ correlationData = new CorrelationDataMQ(exchange, routingKey, millis, message, String.valueOf(this.nextId()));
 
         if (!register.get()) {
             TransactionSynchronizationManager.registerSynchronization(this);
             register.set(true);
+            messageList.set(new ArrayList<>());
         }
-        singleMessage.set(correlationData);
+        messageList.get().add(correlationData);
     }
 
     private void send(CorrelationDataMQ correlationData) {
@@ -364,24 +367,31 @@ public class RabbitmqCommonTxMessageSenderImpl
 
     @Override
     public void beforeCommit(boolean readOnly) {
-        this.script_mq_save_prepare(new CorrelationDataRedis(singleMessage.get()));
+        if (!CollectionUtils.isEmpty(messageList.get())) {
+            messageList.get().forEach(o -> this.script_mq_save_prepare(new CorrelationDataRedis(o)));
+        }
     }
 
     @Override
     public void afterCommit() {
-        this.script_mq_move_prepare_to_do(new CorrelationDataRedis(singleMessage.get()));
-        this.send(singleMessage.get());
+        if (!CollectionUtils.isEmpty(messageList.get())) {
+            messageList.get().forEach(o -> {
+                this.script_mq_move_prepare_to_do(new CorrelationDataRedis(o));
+                this.send(o);
+            });
+        }
+
     }
 
     @Override
     public void afterCompletion(int status) {
-        if (TransactionSynchronization.STATUS_COMMITTED != status) {
-            this.script_mq_remove_prepare(new CorrelationDataRedis(singleMessage.get()));
+        if (TransactionSynchronization.STATUS_COMMITTED != status && !CollectionUtils.isEmpty(messageList.get())) {
+            messageList.get().forEach(o -> this.script_mq_remove_prepare(new CorrelationDataRedis(o)));
         }
         register.remove();
         register.set(false);
-        singleMessage.remove();
-        singleMessage.set(null);
+        messageList.remove();
+        messageList.set(null);
     }
 
     @Override
