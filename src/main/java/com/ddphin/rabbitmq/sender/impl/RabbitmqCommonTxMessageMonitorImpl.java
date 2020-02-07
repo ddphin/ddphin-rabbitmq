@@ -2,6 +2,7 @@ package com.ddphin.rabbitmq.sender.impl;
 
 import com.ddphin.jedis.helper.JedisHelper;
 import com.ddphin.rabbitmq.configuration.DdphinRabbitmqProperties;
+import com.ddphin.rabbitmq.sender.RabbitmqCommonTxMessageMonitor;
 import com.ddphin.rabbitmq.sender.RabbitmqCommonTxMessageSender;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -18,16 +19,16 @@ import java.io.IOException;
  * @Author ddphin
  */
 @Slf4j
-public class RabbitmqCommonTxMessageSenderImpl
+public class RabbitmqCommonTxMessageMonitorImpl
         extends RabbitmqCommonTxMessageActor
-        implements RabbitmqCommonTxMessageSender
+        implements RabbitmqCommonTxMessageMonitor
         , RabbitTemplate.ConfirmCallback
         , RabbitTemplate.ReturnCallback
         , TransactionSynchronization
         , Ordered
         , InitializingBean {
 
-    public RabbitmqCommonTxMessageSenderImpl(
+    public RabbitmqCommonTxMessageMonitorImpl(
             RabbitTemplate rabbitTemplate,
             JedisHelper jedisHelper,
             DdphinRabbitmqProperties ddphinRabbitmqProperties) throws IOException {

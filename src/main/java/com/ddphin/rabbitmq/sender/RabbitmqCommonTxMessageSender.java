@@ -9,7 +9,4 @@ package com.ddphin.rabbitmq.sender;
 public interface RabbitmqCommonTxMessageSender {
     void send(String exchange, String routingKey, Integer millis, final Object message);
     void send(String exchange, String routingKey, final Object message);
-    void retry();
-    void redo();
-    void clear();
 }

@@ -1,7 +1,7 @@
 package com.ddphin.rabbitmq.scheduler;
 
 import com.ddphin.rabbitmq.configuration.DdphinRabbitmqProperties;
-import com.ddphin.rabbitmq.sender.RabbitmqCommonTxMessageSender;
+import com.ddphin.rabbitmq.sender.RabbitmqCommonTxMessageMonitor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Slf4j
 public class RabbitmqRetrySchedulerConfigurer implements SchedulingConfigurer {
-    private RabbitmqCommonTxMessageSender rabbitmqCommonTxMessageSender;
+    private RabbitmqCommonTxMessageMonitor rabbitmqCommonTxMessageMonitor;
     private AtomicInteger integer = new AtomicInteger(0);
     private String retryCron = "0 0/1 * * * ?";
     private String redoCron = "30 0/1 * * * ?";
@@ -31,9 +31,9 @@ public class RabbitmqRetrySchedulerConfigurer implements SchedulingConfigurer {
     private Boolean enableClear = true;
 
     public RabbitmqRetrySchedulerConfigurer(
-            RabbitmqCommonTxMessageSender rabbitmqCommonTxMessageSender,
+            RabbitmqCommonTxMessageMonitor rabbitmqCommonTxMessageMonitor,
             DdphinRabbitmqProperties ddphinRabbitmqProperties) {
-        this.rabbitmqCommonTxMessageSender = rabbitmqCommonTxMessageSender;
+        this.rabbitmqCommonTxMessageMonitor = rabbitmqCommonTxMessageMonitor;
         if (null != ddphinRabbitmqProperties.getRetryCron()) {
             this.retryCron = ddphinRabbitmqProperties.getRetryCron();
         }
@@ -110,19 +110,19 @@ public class RabbitmqRetrySchedulerConfigurer implements SchedulingConfigurer {
 
     private void retry() {
         log.info("MQ message retry begin: CRON@{} - AT@{}", this.getRetryCron(), new Date());
-        rabbitmqCommonTxMessageSender.retry();
+        rabbitmqCommonTxMessageMonitor.retry();
         log.info("MQ message retry end: CRON@{} - AT@{}",this.getRetryCron(), new Date());
     }
 
     private void redo() {
         log.info("MQ message redo begin: CRON@{} - AT@{}", this.getRedoCron(), new Date());
-        rabbitmqCommonTxMessageSender.redo();
+        rabbitmqCommonTxMessageMonitor.redo();
         log.info("MQ message redo end: CRON@{} - AT@{}",this.getRedoCron(), new Date());
     }
 
     private void clear() {
         log.info("MQ message clear begin: CRON@{} - AT@{}", this.getRedoCron(), new Date());
-        rabbitmqCommonTxMessageSender.clear();
+        rabbitmqCommonTxMessageMonitor.clear();
         log.info("MQ message clear end: CRON@{} - AT@{}",this.getRedoCron(), new Date());
     }
 }
